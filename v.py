@@ -1,7 +1,7 @@
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Danh sách các URL mẫu
+# Danh sách URL mẫu
 urls = [
     "https://cd0b-35-201-219-137.ngrok-free.app/api?host={host}&time={time}&proxy={proxy}",
     "https://0847-35-236-136-249.ngrok-free.app/api?host={host}&time={time}&proxy={proxy}",
@@ -18,46 +18,27 @@ urls = [
     "https://bb2b-35-189-190-31.ngrok-free.app/api?host={host}&time={time}&proxy={proxy}"
 ]
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Chào bạn! Gửi tôi lệnh /sent kèm theo các tham số theo thứ tự: <host> <time> <proxy>.")
-
-def sent(update: Update, context: CallbackContext):
-    # Kiểm tra xem người dùng có cung cấp đúng 3 tham số không
-    if len(context.args) != 3:
-        update.message.reply_text("Vui lòng gửi đúng 3 tham số: <host> <time> <proxy>")
+async def sent(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args
+    if len(args) != 3:
+        await update.message.reply_text("Dùng: /sent <host> <time> <proxy>")
         return
-    
-    # Lấy giá trị từ các tham số
-    host = context.args[0]
-    time = context.args[1]
-    proxy = context.args[2]
-    
-    # Thay thế nhanh trong các URL
-    new_urls = []
-    for url in urls:
-        url = url.replace("{host}", host)
-        url = url.replace("{time}", time)
-        url = url.replace("{proxy}", proxy)
-        new_urls.append(url)
-    
-    # Trả lại các URL đã thay đổi
-    response = "\n\n".join(new_urls)
-    update.message.reply_text(response)
+
+    host, time, proxy = args
+    result_urls = [
+        url.replace("{host}", host).replace("{time}", time).replace("{proxy}", proxy)
+        for url in urls
+    ]
+    await update.message.reply_text("\n\n".join(result_urls))
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Gửi lệnh: /sent <host> <time> <proxy>")
 
 def main():
-    # Tạo bot và updater
-    updater = Updater("8193233706:AAEmFofZ4wtUaOe6ZoAEdu3CdiIPPVaBX-4", use_context=True)
-    
-    # Lấy dispatcher để thêm handler
-    dispatcher = updater.dispatcher
-    
-    # Khởi tạo các handler
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("sent", sent))
-    
-    # Bắt đầu bot
-    updater.start_polling()
-    updater.idle()
+    app = ApplicationBuilder().token("8193233706:AAEmFofZ4wtUaOe6ZoAEdu3CdiIPPVaBX-4").build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("sent", sent))
+    app.run_polling()
 
 if __name__ == '__main__':
     main()
